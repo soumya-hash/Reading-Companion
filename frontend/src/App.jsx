@@ -48,7 +48,6 @@ import {
     Download,
     Flame,
     Gem,
-    Home,
     Image as ImageIcon,
     Info,
     Library as LibraryIcon,
@@ -175,10 +174,13 @@ import UpdateManager from "./UpdateManager.jsx";
 import { useBookAura } from "./useBookAura.js";
 import { useButtonHaptics, useHaptic } from "./useHaptic.js";
 import { APP_VERSION } from "./version.js";
+import { InkIcon } from "./InkIcons.jsx";
+import { loadInkMotion } from "./inkMotion.js";
 
 const MODEL_NAME = "gemini-3.1-flash-live-preview";
 const FALLBACK_MODEL_NAME = "gemini-2.5-flash-native-audio-preview-12-2025";
 const LEGACY_STREAMING = import.meta.env.VITE_SESSION_STREAMING_LEGACY === "true";
+const InkGallery = lazy(() => import("./InkGallery.jsx"));
 const FOLLOWUP_MIC_MS = 8_000;
 const RESUME_WINDOW_MS = 2 * 60 * 60_000;
 const SILENCE_CHECK_MS = 4 * 60 * 1000;
@@ -477,6 +479,9 @@ class ErrorBoundary extends Component {
 }
 
 function AppCore() {
+  useEffect(() => {
+    document.documentElement.dataset.motion = loadInkMotion();
+  }, []);
   const account = useAccount();
   useButtonHaptics();
   const [screen, setScreen] = useState("dashboard");
@@ -938,6 +943,9 @@ function AppCore() {
 }
 
 export default function App() {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("ui-v3-gallery") === "1") {
+    return <Suspense fallback={<div className="ink-gallery">Loading UI gallery…</div>}><InkGallery /></Suspense>;
+  }
   return (
     <>
       <NetworkOfflineCurtain />
@@ -1093,21 +1101,21 @@ function BottomNav({ active, onNavigate, badges = {} }) {
     return () => observer.disconnect();
   }, []);
   const items = [
-    { id: "dashboard", Icon: Home, label: "Home" },
-    { id: "library", Icon: LibraryIcon, label: "Library" },
-    { id: "gems", Icon: Gem, label: "Gems" },
-    { id: "memory", Icon: Brain, label: "Memory" },
+    { id: "dashboard", icon: "home", label: "Home" },
+    { id: "library", icon: "library", label: "Library" },
+    { id: "gems", icon: "gems", label: "Gems" },
+    { id: "memory", icon: "memory", label: "Memory" },
   ];
   return (
     <div className="bottom-nav-shell">
       <nav ref={navRef} className="bottom-nav elevated">
-        {items.map(({ id, Icon, label }) => (
-          <Motion.button key={id} className={`nav-item ${active === id ? "active" : ""}`} whileTap={{ scale: 0.9 }} transition={INTERACTION_SPRING} onClick={() => { triggerLightTap(); onNavigate(id); }}>
-            <span className="nav-icon-box"><Icon size={28} strokeWidth={active === id ? 2.4 : 1.8} /></span>
+        {items.map(({ id, icon, label }) => (
+          <Motion.button key={id} className={`nav-item ${active === id ? "active" : ""}`} whileTap={{ scale: 0.97 }} transition={INTERACTION_SPRING} onClick={() => { triggerLightTap(); onNavigate(id); }}>
+            <span className="nav-icon-box"><InkIcon name={icon} size={24} /></span>
             <span className="nav-label">{label}</span>
           </Motion.button>
         ))}
-        <Motion.button className={`nav-item ${active === "profile" ? "active" : ""}`} whileTap={{ scale: 0.9 }} transition={INTERACTION_SPRING} onClick={() => { triggerLightTap(); onNavigate("profile"); }}>
+        <Motion.button className={`nav-item ${active === "profile" ? "active" : ""}`} whileTap={{ scale: 0.97 }} transition={INTERACTION_SPRING} onClick={() => { triggerLightTap(); onNavigate("profile"); }}>
           <span className="nav-icon-box">
             <span className="nav-avatar">{renderAvatar(22)}</span>
             {badges.profile > 0 && <span className="rc-badge" aria-label={`${badges.profile} pending`}>{badges.profile}</span>}

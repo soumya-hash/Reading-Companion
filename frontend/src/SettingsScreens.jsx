@@ -33,6 +33,8 @@ import { fetchArenaPhotoPreference, setArenaPhotoVisibility } from "./readingQuo
 import { supabaseClient } from "./supabaseClient.js";
 import { reportsForOwner } from "./reportOwnership.js";
 import ThemedPicker from "./ThemedPicker.jsx";
+import { InkMotionControl, InkSwitch } from "./InkPrimitives.jsx";
+import { loadHomePreview, loadInkMotion, saveHomePreview, saveInkMotion } from "./inkMotion.js";
 
 export { APP_VERSION };
 const VOICES = ["Leda", "Aoede", "Kore", "Despina", "Erinome", "Sulafat", "Achernar", "Charon", "Orus"];
@@ -262,6 +264,8 @@ export function SettingsScreen({ nav, stores }) {
   const [msg, setMsg] = useState("");
   const [voice, setVoice] = useState(profile.data.voice || "Leda");
   const [theme, setThemeState] = useState(profile.getTheme());
+  const [motion, setMotionState] = useState(loadInkMotion);
+  const [homePreview, setHomePreview] = useState(loadHomePreview);
   const [previewing, setPreviewing] = useState(false);
   const [updateDetailsOpen, setUpdateDetailsOpen] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -336,9 +340,20 @@ export function SettingsScreen({ nav, stores }) {
 
   function setTheme(next) {
     triggerLightTap();
-    setThemeState(next);
-    profile.setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
+    const apply = () => {
+      setThemeState(next);
+      profile.setTheme(next);
+      document.documentElement.setAttribute("data-theme", next);
+    };
+    if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(apply);
+    else apply();
+  }
+  function updateMotion(next) {
+    setMotionState(saveInkMotion(next));
+    document.documentElement.dataset.motion = next;
+  }
+  function updateHomePreview(next) {
+    setHomePreview(saveHomePreview(next));
   }
   async function preview() {
     if (previewing) return;
@@ -445,6 +460,9 @@ export function SettingsScreen({ nav, stores }) {
   useBackLayer(updateDetailsOpen, () => setUpdateDetailsOpen(false));
   useBackLayer(releaseNotesOpen, () => setReleaseNotesOpen(false));
   useBackLayer(deletedBooksOpen, () => setDeletedBooksOpen(false));
+  useEffect(() => {
+    document.documentElement.dataset.motion = motion;
+  }, [motion]);
 
   if (updateDetailsOpen) {
     return (
@@ -498,7 +516,7 @@ export function SettingsScreen({ nav, stores }) {
   const usedPct = Math.min(100, Math.round((kb / 5120) * 100));
 
   return (
-    <div className="screen set-screen">
+    <div className="screen set-screen ink-scope">
       <div className="aurora-bg" />
       <PfHead title="Settings" sub={`Version ${APP_VERSION}`} onBack={nav.goBack} />
 
@@ -535,6 +553,8 @@ export function SettingsScreen({ nav, stores }) {
                 <span><Moon size={14} /> Dark</span>
               </Motion.button>
             </div>
+            <div className="ink-setting-line"><span><b>Motion</b><small>Calm avoids ambient motion; Rich includes brief entry effects.</small></span><InkMotionControl value={motion} onChange={updateMotion} /></div>
+            <InkSwitch checked={homePreview} onChange={updateHomePreview} label="New Home (preview)" hint="Try the alternate desk layout. Your existing Home remains available by switching this off." />
           </div>
         </SetSec>
 
