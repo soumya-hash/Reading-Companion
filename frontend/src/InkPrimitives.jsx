@@ -67,14 +67,8 @@ export function InkHoldConfirmButton({ label = "Hold to confirm", onConfirm, hol
   </button>;
 }
 
-export function InkStamp({ label, earned = false, seen = false, icon = "book" }) {
-  const [thump, setThump] = useState(earned && !seen);
-  useEffect(() => {
-    if (!thump) return undefined;
-    const timer = window.setTimeout(() => setThump(false), 620);
-    return () => window.clearTimeout(timer);
-  }, [thump]);
-  return <div className={`ink-stamp ${earned ? "earned" : "locked"}${thump ? " thump" : ""}`} aria-label={`${label}: ${earned ? "earned" : "not yet earned"}`}>
+export function InkStamp({ label, description = "", earned = false, seen = false, icon = "book" }) {
+  return <div className={`ink-stamp ${earned ? "earned" : "locked"}${earned && !seen ? " thump" : ""}`} aria-label={`${label}: ${earned ? "earned" : "not yet earned"}${description ? `. ${description}` : ""}`} title={description || undefined}>
     <InkIcon name={icon} size={19} /><small>{label}</small>
   </div>;
 }
