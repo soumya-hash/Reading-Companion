@@ -58,7 +58,8 @@ export function InkHoldConfirmButton({ label = "Hold to confirm", onConfirm, hol
     event.preventDefault();
     controller.keyboard();
   };
-  return <button type="button" className="ink-hold" aria-label={`${label}; hold for ${Math.ceil(holdMs / 100) / 10} seconds, or press Enter or Space`} onPointerDown={(event) => { if (event.button === 0) begin(); }} onPointerUp={finish} onPointerCancel={finish} onPointerLeave={finish} onKeyDown={keyboardConfirm} onClick={(event) => {
+  return <button type="button" className="ink-hold" aria-label={`${label}; hold for ${Math.ceil(holdMs / 100) / 10} seconds, or activate normally with a screen reader`} onPointerDown={(event) => { if (event.button === 0) begin(); }} onPointerUp={finish} onPointerCancel={finish} onPointerLeave={finish} onKeyDown={keyboardConfirm} onClick={(event) => {
+    if (event.detail === 0 && !controller.wasConfirmed()) { controller.keyboard(); return; }
     if (event.detail === 0 && controller.wasConfirmed()) return;
     if (!controller.wasConfirmed()) controller.stop();
   }}>
@@ -67,16 +68,27 @@ export function InkHoldConfirmButton({ label = "Hold to confirm", onConfirm, hol
   </button>;
 }
 
-export function InkStamp({ label, description = "", earned = false, seen = false, icon = "book" }) {
-  return <div className={`ink-stamp ${earned ? "earned" : "locked"}${earned && !seen ? " thump" : ""}`} aria-label={`${label}: ${earned ? "earned" : "not yet earned"}${description ? `. ${description}` : ""}`} title={description || undefined}>
+export function InkConfirmationSheet({ message, onCancel, onConfirm, label = "Confirm delete" }) {
+  return <div className="ink-confirm-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+    <section className="ink-confirm-sheet" role="alertdialog" aria-modal="true" aria-label="Confirm destructive action">
+      <span className="ink-confirm-seal"><InkIcon name="shield" size={22} /></span>
+      <p>{message}</p>
+      <div className="ink-confirm-actions"><button type="button" className="ink-confirm-cancel" onClick={onCancel}>Cancel</button><InkHoldConfirmButton label={label} onConfirm={onConfirm} /></div>
+    </section>
+  </div>;
+}
+
+export function InkStamp({ label, description = "", earned = false, seen = false, icon = "book", animate = true, delay = 0 }) {
+  return <div className={`ink-stamp ${earned ? "earned" : "locked"}${earned && animate && !seen ? " thump" : ""}`} style={{ "--stamp-delay": `${delay}ms` }} aria-label={`${label}: ${earned ? "earned" : "not yet earned"}${description ? `. ${description}` : ""}`} title={description || undefined}>
     <InkIcon name={icon} size={19} /><small>{label}</small>
   </div>;
 }
 
-export function InkShelfMeter({ value, unit = "KB", reference = null }) {
+export function InkShelfMeter({ value, unit = "KB", reference = null, visualReference = null }) {
   const percent = reference ? Math.min(100, (value / reference) * 100) : 0;
+  const visualPercent = visualReference ? Math.min(100, (value / visualReference) * 100) : percent;
   return <div className="ink-shelf-meter" role="img" aria-label={reference ? `${value} ${unit} used of ${reference} ${unit}` : `${value} ${unit} used; no fixed cap`}>
-    <div className="ink-shelf-books" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ "--book-height": `${[22, 28, 34][index % 3]}px`, "--book-fill": reference ? `${Math.max(0, Math.min(100, percent - index * 12.5))}%` : "0%" }} />)}</div>
+    <div className="ink-shelf-books" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ "--book-height": `${[22, 28, 34][index % 3]}px`, "--book-fill": visualReference || reference ? `${Math.max(0, Math.min(100, visualPercent - index * 12.5))}%` : "0%" }} />)}</div>
     <div className="ink-shelf-meta"><b>{value} {unit}</b><span>{reference ? `of ${reference} ${unit}` : "No fixed storage cap"}</span></div>
   </div>;
 }
